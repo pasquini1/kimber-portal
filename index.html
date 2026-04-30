@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimber Ward — Content Review</title>
+<style>
+  :root {
+    --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+    --bg: #f8f7f5; --card: #ffffff; --border: #e5e7eb;
+    --text: #111827; --muted: #6b7280; --sidebar: #1c1c1e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* LOGIN */
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1c1c1e; }
+  .login-box { background: #2c2c2e; border-radius: 16px; padding: 48px 40px; width: 380px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+  .login-logo { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
+  .login-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .login-sub { font-size: 14px; color: #9ca3af; margin-bottom: 32px; }
+  .login-box input { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid #3f3f46; background: #1c1c1e; color: #fff; font-size: 15px; margin-bottom: 12px; outline: none; }
+  .login-box input:focus { border-color: #6366f1; }
+  .login-box button { width: 100%; padding: 13px; background: #6366f1; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .login-box button:hover { background: #4f46e5; }
+  .login-err { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
+
+  /* PORTAL */
+  #portal { display: none; min-height: 100vh; }
+  .header { background: #fff; border-bottom: 1px solid var(--border); padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-brand { font-size: 13px; font-weight: 700; letter-spacing: .5px; color: var(--muted); text-transform: uppercase; }
+  .header-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-bar-bg { width: 160px; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width .4s; }
+  .progress-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .submit-btn { background: #6366f1; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .submit-btn:hover { background: #4f46e5; }
+
+  .body-wrap { display: flex; min-height: calc(100vh - 64px); }
+
+  /* SIDEBAR */
+  .sidebar { width: 240px; background: var(--sidebar); color: #fff; padding: 24px 16px; position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto; flex-shrink: 0; }
+  .sidebar-section { margin-bottom: 28px; }
+  .sidebar-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #6b7280; margin-bottom: 12px; font-weight: 600; }
+  .sidebar-meta { font-size: 13px; color: #d1d5db; line-height: 1.8; }
+  .sidebar-meta span { color: #fff; font-weight: 600; }
+  .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+  .stat-val { font-weight: 700; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.amber { color: var(--amber); }
+  .filter-btn { display: block; width: 100%; text-align: left; padding: 8px 12px; border-radius: 8px; border: none; background: transparent; color: #9ca3af; font-size: 13px; cursor: pointer; margin-bottom: 4px; transition: all .15s; }
+  .filter-btn:hover { background: #2c2c2e; color: #fff; }
+  .filter-btn.active { background: #3f3f46; color: #fff; font-weight: 600; }
+  .filter-count { float: right; background: #3f3f46; border-radius: 99px; padding: 1px 7px; font-size: 11px; }
+  .filter-btn.active .filter-count { background: #6366f1; }
+
+  /* FEED */
+  .feed { flex: 1; padding: 32px 24px; max-width: 780px; margin: 0 auto; }
+  .feed-empty { text-align: center; padding: 80px 0; color: var(--muted); font-size: 15px; }
+  .loading { text-align: center; padding: 80px 0; color: var(--muted); }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: #6366f1; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CARD */
+  .post-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); margin-bottom: 28px; overflow: hidden; transition: box-shadow .2s; }
+  .post-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+  .card-header { padding: 14px 16px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; }
+  .tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; letter-spacing: .3px; text-transform: uppercase; }
+  .tag-ig { background: #e0e7ff; color: #4338ca; }
+  .tag-fb { background: #dbeafe; color: #1d4ed8; }
+  .tag-li { background: #e0f2fe; color: #0369a1; }
+  .tag-blog { background: #f3e8ff; color: #7e22ce; }
+  .tag-home { background: #dcfce7; color: #166534; }
+  .tag-style { background: #fef9c3; color: #854d0e; }
+  .tag-life { background: #ffedd5; color: #9a3412; }
+  .tag-adventure { background: #f0fdf4; color: #15803d; }
+  .tag-brand { background: #f5f3ff; color: #6d28d9; }
+  .card-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .status-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+  .s-pending { background: #fef3c7; color: #92400e; }
+  .s-approved { background: #dcfce7; color: #166534; }
+  .s-changes { background: #fee2e2; color: #991b1b; }
+
+  /* IG PREVIEW */
+  .ig-preview { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .ig-top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+  .ig-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #f97316, #ec4899); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; }
+  .ig-handle { font-size: 13px; font-weight: 700; color: var(--text); }
+  .ig-location { font-size: 11px; color: var(--muted); }
+  .ig-image-wrap { position: relative; background: #f3f4f6; aspect-ratio: 1/1; overflow: hidden; }
+  .ig-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ig-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #9ca3af; }
+  .ig-placeholder svg { opacity: .35; }
+  .ig-placeholder span { font-size: 12px; }
+  .reel-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.15); }
+  .play-btn { width: 56px; height: 56px; background: rgba(255,255,255,.92); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(0,0,0,.2); }
+  .type-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 6px; letter-spacing: .5px; }
+  .carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
+  .carousel-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.6); }
+  .carousel-dots span.active { background: #fff; width: 18px; border-radius: 99px; }
+  .ig-actions { display: flex; gap: 14px; padding: 10px 14px 6px; }
+  .ig-caption { padding: 0 14px 4px; font-size: 13px; line-height: 1.6; color: var(--text); }
+  .ig-caption strong { font-weight: 700; }
+  .ig-hashtags { padding: 0 14px 12px; font-size: 12px; color: #6366f1; line-height: 1.6; }
+  .notes-row { padding: 8px 16px; font-size: 12px; color: var(--muted); background: #f9fafb; border-top: 1px solid var(--border); }
+  .notes-row strong { color: var(--text); }
+
+  .actions-row { padding: 14px 16px; display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+  .action-btn { padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+  .btn-approve { background: #dcfce7; color: #166534; }
+  .btn-approve:hover { background: #bbf7d0; }
+  .btn-approve.active { background: #16a34a; color: #fff; }
+  .btn-changes { background: #fee2e2; color: #991b1b; }
+  .btn-changes:hover { background: #fecaca; }
+  .btn-changes.active { background: #dc2626; color: #fff; }
+  .comment-wrap { flex: 1; min-width: 200px; }
+  .comment-wrap textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; resize: vertical; min-height: 40px; max-height: 120px; outline: none; font-family: inherit; color: var(--text); transition: border-color .15s; }
+  .comment-wrap textarea:focus { border-color: #6366f1; }
+  .comment-wrap textarea::placeholder { color: #9ca3af; }
+
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .feed { padding: 16px; }
+    .progress-wrap { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Pasquini Creative</div>
+    <div class="login-title">Kimber Ward</div>
+    <div class="login-sub">Content Review Portal</div>
+    <input type="password" id="pw-input" placeholder="Enter access code" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button onclick="tryLogin()">Access Portal</button>
+    <div class="login-err" id="login-err">Incorrect access code. Try again.</div>
+  </div>
+</div>
+
+<div id="portal">
+  <header class="header">
+    <div>
+      <div class="header-brand">Pasquini Creative</div>
+      <div class="header-title">Kimber Ward — Content Review</div>
+    </div>
+    <div class="header-right">
+      <div class="progress-wrap">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="prog-label">0 of 0 reviewed</div>
+      </div>
+      <button class="submit-btn" onclick="submitReview()">Submit Review</button>
+    </div>
+  </header>
+  <div class="body-wrap">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Batch</div>
+        <div class="sidebar-meta">
+          <div>Posts: <span id="sb-total">—</span></div>
+          <div>Earliest: <span id="sb-earliest">—</span></div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Review Progress</div>
+        <div class="stat-row"><span>Approved</span><span class="stat-val green" id="sb-approved">0</span></div>
+        <div class="stat-row"><span>Changes</span><span class="stat-val amber" id="sb-changes">0</span></div>
+        <div class="stat-row"><span>Pending</span><span class="stat-val" id="sb-pending">0</span></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Filter</div>
+        <button class="filter-btn active" onclick="filt('all',this)">All <span class="filter-count" id="fc-all">0</span></button>
+        <button class="filter-btn" onclick="filt('pending',this)">Pending <span class="filter-count" id="fc-pending">0</span></button>
+        <button class="filter-btn" onclick="filt('approved',this)">Approved <span class="filter-count" id="fc-approved">0</span></button>
+        <button class="filter-btn" onclick="filt('changes',this)">Needs Changes <span class="filter-count" id="fc-changes">0</span></button>
+      </div>
+    </aside>
+    <main class="feed" id="feed">
+      <div class="loading"><div class="spinner"></div>Loading content...</div>
+    </main>
+  </div>
+</div>
+
+<script>
+const PW        = 'kimber2026';
+const CSV_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQAgtXsam5WAMvz1AL6cB48--gBl4zH2M-zFRd6ml4nUIFGCeP6s6vZCCyWt5yCpMNqJRStn_HBXNl4/pub?gid=169271394&single=true&output=csv';
+
+let posts = [];
+let currentFilter = 'all';
+
+function tryLogin() {
+  if (document.getElementById('pw-input').value === PW) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('portal').style.display = 'block';
+    loadPosts();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
+
+async function loadPosts() {
+  try {
+    const r = await fetch(CSV_URL);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const text = await r.text();
+    const rows = parseCSV(text);
+    posts = rows.map((row, i) => ({
+      id:       i,
+      title:    row['Post Title']      || '',
+      type:     row['Type']            || '',
+      platform: row['Platform']        || '',
+      pillar:   row['Pillar']          || '',
+      date:     row['Scheduled Date']  || '',
+      caption:  row['Caption']         || '',
+      hashtags: row['Hashtags']        || '',
+      imageUrl: row['Image URL']       || '',
+      notes:    row['Notes']           || '',
+      status:   'pending',
+      comment:  ''
+    })).filter(p => p.title);
+    initSidebar();
+    ui();
+  } catch(e) {
+    document.getElementById('feed').innerHTML = `
+      <div class="feed-empty" style="line-height:2">
+        ⚠️ <strong>Could not load content from Google Sheets.</strong><br><br>
+        Quick fix — in Google Sheets:<br>
+        <strong>File → Share → Publish to web → Sheet 1 → CSV → Publish</strong><br><br>
+        Then refresh this page. Content will load automatically.
+        <br><br><small style="color:#9ca3af">Sheet ID: ${SHEET_ID}</small>
+      </div>`;
+  }
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], next = text[i + 1];
+
+    if (c === '"') {
+      if (inQ && next === '"') { cur += '"'; i++; }  // escaped quote ""
+      else { inQ = !inQ; }
+    } else if (c === ',' && !inQ) {
+      row.push(cur); cur = '';
+    } else if ((c === '\n' || c === '\r') && !inQ) {
+      if (c === '\r' && next === '\n') i++;           // skip \r in \r\n
+      row.push(cur); cur = '';
+      if (row.some(v => v !== '')) rows.push(row);
+      row = [];
+    } else {
+      cur += c;
+    }
+  }
+  // last field
+  row.push(cur);
+  if (row.some(v => v !== '')) rows.push(row);
+
+  if (rows.length === 0) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(vals => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || ''); });
+    return obj;
+  });
+}
+
+function initSidebar() {
+  const dates = posts.map(p => p.date).filter(Boolean).sort();
+  document.getElementById('sb-earliest').textContent = dates.length ? fmtDate(dates[0]) : '—';
+}
+
+function ui() {
+  const approved = posts.filter(p => p.status === 'approved').length;
+  const changes  = posts.filter(p => p.status === 'changes').length;
+  const pending  = posts.filter(p => p.status === 'pending').length;
+  const total    = posts.length;
+  const reviewed = approved + changes;
+
+  document.getElementById('sb-approved').textContent = approved;
+  document.getElementById('sb-changes').textContent  = changes;
+  document.getElementById('sb-pending').textContent  = pending;
+  document.getElementById('sb-total').textContent    = total;
+
+  const pct = total ? Math.round((reviewed / total) * 100) : 0;
+  document.getElementById('prog-fill').style.width  = pct + '%';
+  document.getElementById('prog-label').textContent = `${reviewed} of ${total} reviewed`;
+
+  document.getElementById('fc-all').textContent      = total;
+  document.getElementById('fc-pending').textContent  = pending;
+  document.getElementById('fc-approved').textContent = approved;
+  document.getElementById('fc-changes').textContent  = changes;
+
+  renderFeed();
+}
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  const visible = posts.filter(p => currentFilter === 'all' || p.status === currentFilter);
+  if (!visible.length) { feed.innerHTML = '<div class="feed-empty">No posts in this view.</div>'; return; }
+  feed.innerHTML = visible.map(cardHTML).join('');
+}
+
+function pillarTag(p) {
+  const map = {HOME:'home',STYLE:'style',LIFE:'life',ADVENTURE:'adventure',BRAND:'brand'};
+  const c = map[(p||'').toUpperCase()] || 'brand';
+  return `<span class="tag tag-${c}">${p||'Post'}</span>`;
+}
+
+function platformTag(pl) {
+  if (!pl) return '';
+  const p = pl.toLowerCase();
+  if (p.includes('linkedin'))  return `<span class="tag tag-li">LinkedIn</span>`;
+  if (p.includes('blog'))      return `<span class="tag tag-blog">Blog</span>`;
+  if (p.includes('instagram') && p.includes('facebook')) return `<span class="tag tag-ig">IG / FB</span>`;
+  if (p.includes('instagram')) return `<span class="tag tag-ig">Instagram</span>`;
+  if (p.includes('facebook'))  return `<span class="tag tag-fb">Facebook</span>`;
+  return `<span class="tag tag-ig">${pl}</span>`;
+}
+
+function imageArea(p) {
+  const t          = (p.type||'').toLowerCase();
+  const isReel     = t === 'reel' || t === 'video';
+  const isCarousel = t === 'graphic';
+
+  const inner = p.imageUrl
+    ? `<img src="${p.imageUrl}" alt="${h(p.title)}" onerror="this.parentElement.innerHTML=noImgHTML()">`
+    : `<div class="ig-placeholder">${typeIcon(t)}<span>Add image URL to sheet</span></div>`;
+
+  let overlay = '';
+  if (isReel) overlay = `
+    <div class="reel-overlay">
+      <div class="play-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="#374151"><polygon points="5,3 19,12 5,21"/></svg></div>
+    </div>
+    <div class="type-badge">▶ Reel</div>`;
+  else if (isCarousel) overlay = `
+    <div class="carousel-dots"><span class="active"></span><span></span><span></span></div>
+    <div class="type-badge">⊞ Carousel</div>`;
+
+  return `<div class="ig-image-wrap">${inner}${overlay}</div>`;
+}
+
+function typeIcon(t) {
+  const isReel = t === 'reel' || t === 'video';
+  return isReel
+    ? `<svg width="40" height="40" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="#9ca3af" stroke="none"/></svg>`
+    : `<svg width="40" height="40" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>`;
+}
+
+function noImgHTML() {
+  return `<div class="ig-placeholder"><svg width="40" height="40" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span>Image not found</span></div>`;
+}
+
+function cardHTML(p) {
+  const id = p.id;
+  const sc = {pending:'s-pending',approved:'s-approved',changes:'s-changes'}[p.status];
+  const sl = {pending:'⏳ Pending',approved:'✅ Approved',changes:'🔁 Needs Changes'}[p.status];
+  const aa = p.status === 'approved' ? 'active' : '';
+  const ca = p.status === 'changes'  ? 'active' : '';
+  const cap = (p.caption||'').replace(/\n/g,'<br>');
+
+  return `
+  <div class="post-card" id="card-${id}">
+    <div class="card-header">
+      <div class="card-meta">
+        ${platformTag(p.platform)}
+        ${pillarTag(p.pillar)}
+        <span style="font-size:13px;font-weight:600;color:#111;flex-basis:100%">${h(p.title)}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="card-date">📅 ${fmtDate(p.date)}</span>
+        <span class="status-badge ${sc}">${sl}</span>
+      </div>
+    </div>
+    <div class="ig-preview">
+      <div class="ig-top">
+        <div class="ig-avatar">K</div>
+        <div><div class="ig-handle">kimberwarddenver</div><div class="ig-location">Denver, Colorado</div></div>
+      </div>
+      ${imageArea(p)}
+      <div class="ig-actions">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </div>
+      <div class="ig-caption"><strong>kimberwarddenver</strong> ${cap}</div>
+      ${p.hashtags ? `<div class="ig-hashtags">${h(p.hashtags)}</div>` : ''}
+    </div>
+    ${p.notes ? `<div class="notes-row">📌 <strong>Note:</strong> ${h(p.notes)}</div>` : ''}
+    <div class="actions-row">
+      <button class="action-btn btn-approve ${aa}" onclick="approve(${id})">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approve
+      </button>
+      <button class="action-btn btn-changes ${ca}" onclick="reqChg(${id})">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Request Changes
+      </button>
+      <div class="comment-wrap">
+        <textarea id="comment-${id}" placeholder="Add a note for Jon (optional)..." oninput="saveC(${id},this.value)">${h(p.comment)}</textarea>
+      </div>
+    </div>
+  </div>`;
+}
+
+function approve(id) { const p = posts[id]; p.status = p.status==='approved'?'pending':'approved'; ui(); }
+function reqChg(id)  { const p = posts[id]; p.status = p.status==='changes'?'pending':'changes';  ui(); }
+function saveC(id,v) { posts[id].comment = v; }
+
+function filt(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFeed();
+}
+
+function submitReview() {
+  const approved = posts.filter(p => p.status === 'approved');
+  const changes  = posts.filter(p => p.status === 'changes');
+  const pending  = posts.filter(p => p.status === 'pending');
+  let body = `KIMBER WARD — CONTENT REVIEW\n`;
+  body += `Date: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}\n`;
+  body += `Summary: ${approved.length} approved | ${changes.length} need changes | ${pending.length} not reviewed\n\n`;
+  if (approved.length) {
+    body += `✅ APPROVED (${approved.length})\n`;
+    approved.forEach(p => { body += `• ${p.title} (${fmtDate(p.date)})\n`; if (p.comment) body += `  Note: ${p.comment}\n`; });
+    body += '\n';
+  }
+  if (changes.length) {
+    body += `🔁 NEEDS CHANGES (${changes.length})\n`;
+    changes.forEach(p => { body += `• ${p.title} (${fmtDate(p.date)})\n`; body += p.comment ? `  Feedback: ${p.comment}\n` : `  (No specific feedback)\n`; });
+    body += '\n';
+  }
+  if (pending.length) {
+    body += `⏳ NOT REVIEWED (${pending.length})\n`;
+    pending.forEach(p => { body += `• ${p.title}\n`; });
+  }
+  const sub = `Kimber Ward Review — ${approved.length} approved, ${changes.length} need changes`;
+  window.location.href = `mailto:jon@pasquiniconsulting.com?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  catch { return d; }
+}
+function h(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
