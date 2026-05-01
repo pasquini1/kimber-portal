@@ -203,6 +203,13 @@ function tryLogin() {
   }
 }
 
+function mapNotionStatus(s) {
+  const v = (s || '').trim().toLowerCase();
+  if (v === 'approved') return 'approved';
+  if (v === 'needs changes' || v === 'needs change') return 'changes';
+  return 'pending';
+}
+
 async function loadPosts() {
   try {
     const r = await fetch(CSV_URL);
@@ -221,7 +228,7 @@ async function loadPosts() {
       imageUrl: row['Image URL']       || '',
       videoUrl: row['Video URL']       || '',
       notes:    row['Notes']           || '',
-      status:   'pending',
+      status:   mapNotionStatus(row['Notion Status']),
       comment:  ''
     })).filter(p => p.title);
     initSidebar();
