@@ -91,11 +91,13 @@
   .ig-handle { font-size: 13px; font-weight: 700; color: var(--text); }
   .ig-location { font-size: 11px; color: var(--muted); }
   .ig-image-wrap { position: relative; background: #f3f4f6; aspect-ratio: 4/5; overflow: hidden; }
-  .ig-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ig-image-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
   .ig-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #9ca3af; }
   .ig-placeholder svg { opacity: .35; }
   .ig-placeholder span { font-size: 12px; }
   .reel-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.15); }
+  .reel-preview-btn { display: block; margin: 10px 0 4px; padding: 8px 16px; background: #111; color: #fff; font-size: 13px; font-weight: 600; text-align: center; border-radius: 8px; text-decoration: none; letter-spacing: .02em; transition: background .15s; }
+  .reel-preview-btn:hover { background: #374151; }
   .play-btn { width: 56px; height: 56px; background: rgba(255,255,255,.92); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(0,0,0,.2); }
   .type-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 6px; letter-spacing: .5px; }
   .carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
@@ -217,6 +219,7 @@ async function loadPosts() {
       caption:  row['Caption']         || '',
       hashtags: row['Hashtags']        || '',
       imageUrl: row['Image URL']       || '',
+      videoUrl: row['Video URL']       || '',
       notes:    row['Notes']           || '',
       status:   'pending',
       comment:  ''
@@ -328,7 +331,7 @@ function imageArea(p) {
   const isCarousel = t === 'graphic';
 
   const inner = p.imageUrl
-    ? `<img src="${p.imageUrl}" alt="${h(p.title)}" onerror="this.parentElement.innerHTML=noImgHTML()">`
+    ? `<img src="${p.imageUrl}" alt="${h(p.title)}" onload="this.parentElement.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" onerror="this.parentElement.innerHTML=noImgHTML()">`
     : `<div class="ig-placeholder">${typeIcon(t)}<span>Add image URL to sheet</span></div>`;
 
   let overlay = '';
@@ -341,7 +344,11 @@ function imageArea(p) {
     <div class="carousel-dots"><span class="active"></span><span></span><span></span></div>
     <div class="type-badge">⊞ Carousel</div>`;
 
-  return `<div class="ig-image-wrap">${inner}${overlay}</div>`;
+  const reelBtn = (isReel && p.videoUrl)
+    ? `<a href="${p.videoUrl}" target="_blank" rel="noopener" class="reel-preview-btn">▶ Watch Reel</a>`
+    : '';
+
+  return `<div class="ig-image-wrap">${inner}${overlay}</div>${reelBtn}`;
 }
 
 function typeIcon(t) {
