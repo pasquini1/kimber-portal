@@ -100,9 +100,17 @@
   .reel-preview-btn:hover { background: #374151; }
   .play-btn { width: 56px; height: 56px; background: rgba(255,255,255,.92); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(0,0,0,.2); }
   .type-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 6px; letter-spacing: .5px; }
-  .carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
-  .carousel-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.6); }
+  .carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5; }
+  .carousel-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.6); cursor: pointer; transition: all .2s; }
   .carousel-dots span.active { background: #fff; width: 18px; border-radius: 99px; }
+  .carousel-slide { display: none; width: 100%; }
+  .carousel-slide.active { display: block; }
+  .carousel-slide img { width: 100%; display: block; }
+  .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.92); border: none; border-radius: 50%; width: 34px; height: 34px; font-size: 20px; cursor: pointer; z-index: 5; box-shadow: 0 1px 8px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; line-height: 1; transition: background .15s; }
+  .carousel-btn:hover { background: #fff; }
+  .carousel-prev { left: 8px; }
+  .carousel-next { right: 8px; }
+  .carousel-counter { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; z-index: 5; }
   .ig-actions { display: flex; gap: 14px; padding: 10px 14px 6px; }
   .ig-caption { padding: 0 14px 4px; font-size: 13px; line-height: 1.6; color: var(--text); }
   .ig-caption strong { font-weight: 700; }
@@ -332,21 +340,53 @@ function platformTag(pl) {
   return `<span class="tag tag-ig">${pl}</span>`;
 }
 
+function resolveImgUrl(raw) {
+  const BASE_URL = 'https://pasquini1.github.io/kimber-portal/';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  return trimmed.startsWith('http') ? trimmed : BASE_URL + trimmed.split('/').map(encodeURIComponent).join('/');
+}
+
 function imageArea(p) {
-  const t          = (p.type||'').toLowerCase();
-  const isReel     = t === 'reel' || t === 'video';
-  const isCarousel = t === 'graphic';
+  const t      = (p.type||'').toLowerCase();
+  const isReel = t === 'reel' || t === 'video';
 
-  const BASE_URL  = 'https://pasquini1.github.io/kimber-portal/';
-  const rawVal    = (p.imageUrl || '').replace(/^carousel:\s*/i, '');
-  const firstRaw  = rawVal.split(',')[0].trim();
-  const imgUrl    = firstRaw.startsWith('http')
-    ? firstRaw
-    : firstRaw ? BASE_URL + firstRaw.split('/').map(encodeURIComponent).join('/') : '';
+  // Parse all image URLs (supports "Carousel: a.png, b.png" or bare URLs)
+  const rawVal = (p.imageUrl || '').replace(/^carousel:\s*/i, '');
+  const urls   = rawVal.split(',').map(resolveImgUrl).filter(Boolean);
 
-  const inner = imgUrl
-    ? `<img src="${imgUrl}" alt="${h(p.title)}" onload="this.parentElement.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" onerror="this.parentElement.innerHTML=noImgHTML()">`
-    : `<div class="ig-placeholder">${typeIcon(t)}<span>Visual coming soon</span></div>`;
+  if (!urls.length) {
+    const reelBtn = (isReel && p.videoUrl)
+      ? `<a href="${p.videoUrl}" target="_blank" rel="noopener" class="reel-preview-btn">▶ Watch Reel</a>`
+      : '';
+    return `<div class="ig-image-wrap"><div class="ig-placeholder">${typeIcon(t)}<span>Visual coming soon</span></div></div>${reelBtn}`;
+  }
+
+  const cid = `c-${p.id}`;
+  let inner;
+
+  if (urls.length === 1) {
+    inner = `<img src="${urls[0]}" alt="${h(p.title)}"
+      onload="this.parentElement.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight"
+      onerror="this.parentElement.innerHTML=noImgHTML()">`;
+  } else {
+    const slides = urls.map((url, i) =>
+      `<div class="carousel-slide${i===0?' active':''}" data-idx="${i}">
+        <img src="${url}" alt="${h(p.title)} (${i+1}/${urls.length})" style="width:100%;display:block"
+          onerror="this.parentElement.innerHTML='<div class=\\'ig-placeholder\\'><span>Image not found</span></div>'">
+      </div>`
+    ).join('');
+    const dots = urls.map((_, i) =>
+      `<span class="${i===0?'active':''}" onclick="carouselGoto('${cid}',${i})"></span>`
+    ).join('');
+    inner = `<div id="${cid}" class="carousel-container" style="position:relative">
+      ${slides}
+      <button class="carousel-btn carousel-prev" onclick="carouselNav('${cid}',-1)">&#8249;</button>
+      <button class="carousel-btn carousel-next" onclick="carouselNav('${cid}',1)">&#8250;</button>
+      <div class="carousel-dots">${dots}</div>
+      <div class="carousel-counter" id="${cid}-ctr">1 / ${urls.length}</div>
+    </div>`;
+  }
 
   let overlay = '';
   if (isReel) overlay = `
@@ -354,15 +394,42 @@ function imageArea(p) {
       <div class="play-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="#374151"><polygon points="5,3 19,12 5,21"/></svg></div>
     </div>
     <div class="type-badge">▶ Reel</div>`;
-  else if (isCarousel) overlay = `
-    <div class="carousel-dots"><span class="active"></span><span></span><span></span></div>
-    <div class="type-badge">⊞ Carousel</div>`;
+  else if (urls.length > 1) overlay = `<div class="type-badge">⊞ ${urls.length} images</div>`;
 
   const reelBtn = (isReel && p.videoUrl)
     ? `<a href="${p.videoUrl}" target="_blank" rel="noopener" class="reel-preview-btn">▶ Watch Reel</a>`
     : '';
 
   return `<div class="ig-image-wrap">${inner}${overlay}</div>${reelBtn}`;
+}
+
+function carouselNav(cid, dir) {
+  const el = document.getElementById(cid);
+  if (!el) return;
+  const slides = el.querySelectorAll('.carousel-slide');
+  const dots   = el.querySelectorAll('.carousel-dots span');
+  let cur = Array.from(slides).findIndex(s => s.classList.contains('active'));
+  const nxt = (cur + dir + slides.length) % slides.length;
+  slides[cur].classList.remove('active');
+  slides[nxt].classList.add('active');
+  dots[cur]?.classList.remove('active');
+  dots[nxt]?.classList.add('active');
+  const ctr = document.getElementById(`${cid}-ctr`);
+  if (ctr) ctr.textContent = `${nxt+1} / ${slides.length}`;
+}
+
+function carouselGoto(cid, idx) {
+  const el = document.getElementById(cid);
+  if (!el) return;
+  const slides = el.querySelectorAll('.carousel-slide');
+  const dots   = el.querySelectorAll('.carousel-dots span');
+  let cur = Array.from(slides).findIndex(s => s.classList.contains('active'));
+  slides[cur].classList.remove('active');
+  slides[idx].classList.add('active');
+  dots[cur]?.classList.remove('active');
+  dots[idx]?.classList.add('active');
+  const ctr = document.getElementById(`${cid}-ctr`);
+  if (ctr) ctr.textContent = `${idx+1} / ${slides.length}`;
 }
 
 function typeIcon(t) {
