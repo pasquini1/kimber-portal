@@ -337,9 +337,11 @@ function imageArea(p) {
   const isReel     = t === 'reel' || t === 'video';
   const isCarousel = t === 'graphic';
 
-  const inner = p.imageUrl
-    ? `<img src="${p.imageUrl}" alt="${h(p.title)}" onload="this.parentElement.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" onerror="this.parentElement.innerHTML=noImgHTML()">`
-    : `<div class="ig-placeholder">${typeIcon(t)}<span>Add image URL to sheet</span></div>`;
+  const rawUrl = (p.imageUrl || '').split(',')[0].trim();
+  const imgUrl = rawUrl.startsWith('http') ? rawUrl : '';
+  const inner = imgUrl
+    ? `<img src="${imgUrl}" alt="${h(p.title)}" onload="this.parentElement.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" onerror="this.parentElement.innerHTML=noImgHTML()">`
+    : `<div class="ig-placeholder">${typeIcon(t)}<span>Visual coming soon</span></div>`;
 
   let overlay = '';
   if (isReel) overlay = `
