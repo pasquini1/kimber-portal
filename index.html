@@ -337,8 +337,13 @@ function imageArea(p) {
   const isReel     = t === 'reel' || t === 'video';
   const isCarousel = t === 'graphic';
 
-  const rawUrl = (p.imageUrl || '').split(',')[0].trim();
-  const imgUrl = rawUrl.startsWith('http') ? rawUrl : '';
+  const BASE_URL  = 'https://pasquini1.github.io/kimber-portal/';
+  const rawVal    = (p.imageUrl || '').replace(/^carousel:\s*/i, '');
+  const firstRaw  = rawVal.split(',')[0].trim();
+  const imgUrl    = firstRaw.startsWith('http')
+    ? firstRaw
+    : firstRaw ? BASE_URL + firstRaw.split('/').map(encodeURIComponent).join('/') : '';
+
   const inner = imgUrl
     ? `<img src="${imgUrl}" alt="${h(p.title)}" onload="this.parentElement.style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" onerror="this.parentElement.innerHTML=noImgHTML()">`
     : `<div class="ig-placeholder">${typeIcon(t)}<span>Visual coming soon</span></div>`;
